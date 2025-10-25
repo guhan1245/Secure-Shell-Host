@@ -1,0 +1,332 @@
+===========================================================
+⚙️  SERVICE MANAGEMENT – LEGENDARY DOCUMENT (UBUNTU)
+===========================================================
+
+===========================================================
+🧠  1. UNDERSTANDING SERVICES IN UBUNTU
+===========================================================
+
+Ubuntu (16.04 and later) uses **systemd** as its init system.
+All background programs and daemons are controlled using:
+  👉  systemctl
+  👉  service
+  👉  journalctl
+
+===========================================================
+📋  2. BASIC SERVICE OPERATIONS
+===========================================================
+
+# Start a service
+sudo systemctl start <service_name>
+
+# Stop a service
+sudo systemctl stop <service_name>
+
+# Restart a service
+sudo systemctl restart <service_name>
+
+# Reload a service (apply config without full restart)
+sudo systemctl reload <service_name>
+
+# Check current status
+sudo systemctl status <service_name>
+
+# Example:
+sudo systemctl status ssh
+
+===========================================================
+⚡  3. ENABLE / DISABLE SERVICE AT BOOT
+===========================================================
+
+# Enable service to start automatically at boot
+sudo systemctl enable <service_name>
+
+# Disable service from auto-start
+sudo systemctl disable <service_name>
+
+# Re-enable and start immediately
+sudo systemctl enable --now <service_name>
+
+# Disable and stop immediately
+sudo systemctl disable --now <service_name>
+
+# Check if service is enabled
+systemctl is-enabled <service_name>
+
+# Example:
+systemctl is-enabled ssh
+
+===========================================================
+🔁  4. SERVICE CONTROL SHORTCUTS
+===========================================================
+
+# Reload all systemd units (after editing .service files)
+sudo systemctl daemon-reload
+
+# List all active services
+systemctl list-units --type=service --state=running
+
+# List all (active + inactive) services
+systemctl list-units --type=service
+
+# View failed services
+systemctl --failed
+
+# Restart all failed services
+sudo systemctl restart $(systemctl --failed | awk '/service/{print $1}')
+
+===========================================================
+🧩  5. SERVICE UNIT FILES
+===========================================================
+
+# Location of system-wide services
+/lib/systemd/system/
+
+# Location for custom user-created services
+/etc/systemd/system/
+
+# To view a service unit file
+systemctl cat <service_name>.service
+
+# To edit a systemd unit safely (creates override)
+sudo systemctl edit <service_name>
+
+# After editing unit files
+sudo systemctl daemon-reload
+sudo systemctl restart <service_name>
+
+===========================================================
+🔍  6. SERVICE LOGS & TROUBLESHOOTING
+===========================================================
+
+# View live logs of a specific service
+sudo journalctl -u <service_name> -f
+
+# View complete log history of a service
+sudo journalctl -u <service_name>
+
+# View logs from last boot only
+sudo journalctl -u <service_name> -b
+
+# View errors only
+sudo journalctl -u <service_name> -p err
+
+# View the last 50 lines
+sudo journalctl -u <service_name> -n 50
+
+# Example:
+sudo journalctl -u ssh -f
+
+===========================================================
+🧾  7. CHECKING SERVICE INFORMATION
+===========================================================
+
+# Show all details of a service
+systemctl show <service_name>
+
+# Show only active state
+systemctl show -p ActiveState <service_name>
+
+# Show all dependencies of a service
+systemctl list-dependencies <service_name>
+
+# Example:
+systemctl list-dependencies ssh
+
+===========================================================
+💥  8. STOPPING / RESTARTING MULTIPLE SERVICES
+===========================================================
+
+# Stop multiple services
+sudo systemctl stop nginx apache2 mysql
+
+# Restart multiple services
+sudo systemctl restart docker ssh cron
+
+# Check multiple statuses
+systemctl status nginx apache2 mysql
+
+===========================================================
+🧱  9. CREATE YOUR OWN CUSTOM SERVICE
+===========================================================
+
+# Create a new service file
+sudo nano /etc/systemd/system/myapp.service
+
+# Example service unit:
+-----------------------------------------------------------
+[Unit]
+Description=My Custom Python Application
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/ubuntu/app/main.py
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+-----------------------------------------------------------
+
+# Reload systemd to apply new service
+sudo systemctl daemon-reload
+
+# Start your service
+sudo systemctl start myapp
+
+# Enable at boot
+sudo systemctl enable myapp
+
+# Check status
+sudo systemctl status myapp
+
+===========================================================
+⚙️  10. TEMPORARY DISABLE / MASK SERVICE
+===========================================================
+
+# Stop and disable service temporarily
+sudo systemctl stop <service_name>
+
+# Mask service (completely disable, cannot be started)
+sudo systemctl mask <service_name>
+
+# Unmask service
+sudo systemctl unmask <service_name>
+
+# Example:
+sudo systemctl mask ssh
+sudo systemctl unmask ssh
+
+===========================================================
+🧰  11. ALTERNATIVE “SERVICE” COMMANDS (Legacy SysV)
+===========================================================
+
+# Start a service (SysV style)
+sudo service <service_name> start
+
+# Stop service
+sudo service <service_name> stop
+
+# Restart service
+sudo service <service_name> restart
+
+# Check status
+sudo service <service_name> status
+
+# Example:
+sudo service ssh status
+
+# List all known SysV services
+service --status-all
+
+===========================================================
+🕓  12. SYSTEMD JOURNAL COMMANDS (GLOBAL LOGGING)
+===========================================================
+
+# View all logs (entire system)
+sudo journalctl
+
+# Follow logs in real time
+sudo journalctl -f
+
+# Logs for current boot
+sudo journalctl -b
+
+# Logs since yesterday
+sudo journalctl --since "yesterday"
+
+# Logs for a specific time range
+sudo journalctl --since "2025-10-25 10:00:00" --until "2025-10-25 18:00:00"
+
+# Filter by severity level
+sudo journalctl -p 3 -xb   # 0=emerg, 1=alert, 2=crit, 3=err
+
+===========================================================
+🔐  13. TROUBLESHOOTING SERVICE FAILURES
+===========================================================
+
+# Check what caused failure
+sudo systemctl status <service_name>
+
+# View journal logs for cause
+sudo journalctl -xeu <service_name>
+
+# Check error messages in last 50 lines
+sudo journalctl -u <service_name> -p err -n 50
+
+# Identify missing dependencies
+sudo systemctl list-dependencies <service_name> --reverse
+
+# Re-run daemon reload
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+
+===========================================================
+🚀  14. SYSTEM MANAGEMENT (BONUS)
+===========================================================
+
+# Reboot the system
+sudo systemctl reboot
+
+# Shutdown
+sudo systemctl poweroff
+
+# Suspend system
+sudo systemctl suspend
+
+# Show system uptime
+systemctl status
+
+===========================================================
+✅  15. EXAMPLES OF COMMON SERVICES
+===========================================================
+
+# SSH
+sudo systemctl status ssh
+
+# Docker
+sudo systemctl status docker
+
+# Apache
+sudo systemctl status apache2
+
+# MySQL
+sudo systemctl status mysql
+
+# Jenkins
+sudo systemctl status jenkins
+
+# Network Manager
+sudo systemctl status NetworkManager
+
+# Cron
+sudo systemctl status cron
+
+===========================================================
+🧹  16. CLEANUP & REPAIR SERVICE STATES
+===========================================================
+
+# Reload all daemons
+sudo systemctl daemon-reload
+
+# Re-execute systemd manager
+sudo systemctl daemon-reexec
+
+# Reset failed state of all units
+sudo systemctl reset-failed
+
+# Reset a specific service
+sudo systemctl reset-failed <service_name>
+
+===========================================================
+🏁  17. QUICK TEST
+===========================================================
+
+# Example test with SSH service
+sudo systemctl status ssh
+sudo systemctl restart ssh
+sudo systemctl enable ssh
+sudo systemctl disable ssh
+sudo journalctl -u ssh -f
+
+# If output shows “active (running)” → success ✅
