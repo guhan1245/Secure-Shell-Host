@@ -1,0 +1,247 @@
+===========================================================
+⚙️  SSH INSTALLATION & SETUP – (RED HAT / CENTOS / FEDORA)
+===========================================================
+
+===========================================================
+📦  1. INSTALL OPENSSH SERVER & CLIENT
+===========================================================
+
+# Update package lists
+sudo dnf update -y
+
+# Install OpenSSH server (for allowing remote logins)
+sudo dnf install openssh-server -y
+
+# Install OpenSSH client (for connecting to other servers)
+sudo dnf install openssh-clients -y
+
+# Verify SSH installation
+ssh -V
+# Output example: OpenSSH_9.2p1, OpenSSL 3.0.8 7 Feb 2023
+
+===========================================================
+🧠  2. ENABLE & START SSH SERVICE
+===========================================================
+
+# Enable SSH service to start at boot
+sudo systemctl enable sshd
+
+# Start SSH service immediately
+sudo systemctl start sshd
+
+# Check SSH service status
+sudo systemctl status sshd
+
+# Restart SSH after configuration changes
+sudo systemctl restart sshd
+
+# Stop SSH service
+sudo systemctl stop sshd
+
+===========================================================
+🛠️  3. CONFIGURE SSH SETTINGS
+===========================================================
+
+# Main configuration file
+sudo nano /etc/ssh/sshd_config
+
+# Important settings to review:
+-----------------------------------------------------------
+Port 22                     # Default port; change if needed (e.g., 2222)
+PermitRootLogin no          # Disable root login for better security
+PasswordAuthentication yes  # Allow password-based login (set to "no" for key-only)
+PubkeyAuthentication yes    # Enable key-based login
+-----------------------------------------------------------
+
+# After editing, restart SSH service
+sudo systemctl restart sshd
+
+===========================================================
+🔍  4. FIREWALL CONFIGURATION (firewalld)
+===========================================================
+
+# Check if firewalld service is active
+sudo systemctl status firewalld
+
+# Start and enable firewall
+sudo systemctl start firewalld
+sudo systemctl enable firewalld
+
+# Allow SSH port (default 22)
+sudo firewall-cmd --permanent --add-service=ssh
+
+# OR allow custom port (example: 2222)
+sudo firewall-cmd --permanent --add-port=2222/tcp
+
+# Reload firewall to apply changes
+sudo firewall-cmd --reload
+
+# Verify allowed rules
+sudo firewall-cmd --list-all
+
+===========================================================
+🔑  5. GENERATE SSH KEYS (CLIENT SIDE)
+===========================================================
+
+# Generate new SSH key pair (RSA)
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Alternative key types:
+# ECDSA:   ssh-keygen -t ecdsa -b 521
+# ED25519: ssh-keygen -t ed25519
+
+# Default key locations:
+# ~/.ssh/id_rsa        → Private key
+# ~/.ssh/id_rsa.pub    → Public key
+
+# Display public key
+cat ~/.ssh/id_rsa.pub
+
+===========================================================
+📤  6. COPY SSH KEY TO REMOTE SERVER
+===========================================================
+
+# Easiest method: use ssh-copy-id
+ssh-copy-id username@remote_host
+
+# Example:
+ssh-copy-id murugan@192.168.1.10
+
+# Manual method:
+cat ~/.ssh/id_rsa.pub | ssh username@remote_host "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+===========================================================
+🔗  7. CONNECT TO REMOTE SERVER
+===========================================================
+
+# Basic connection
+ssh username@remote_host
+
+# Example:
+ssh murugan@192.168.1.10
+
+# Connect with custom port
+ssh -p 2222 username@remote_host
+
+# Connect using specific identity key
+ssh -i ~/.ssh/id_rsa username@remote_host
+
+# Run single command remotely
+ssh username@remote_host "hostname && uptime"
+
+===========================================================
+📂  8. FILE TRANSFER USING SCP
+===========================================================
+
+# Copy local → remote
+scp file.txt username@remote_host:/home/username/
+
+# Copy remote → local
+scp username@remote_host:/home/username/file.txt /local/path/
+
+# Copy directory (recursive)
+scp -r /local/dir username@remote_host:/home/username/
+
+# Use custom port
+scp -P 2222 file.txt username@remote_host:/path/
+
+===========================================================
+🧳  9. FILE TRANSFER USING SFTP
+===========================================================
+
+# Start SFTP session
+sftp username@remote_host
+
+# Inside SFTP commands:
+-----------------------------------------------------------
+ls              → List remote files
+lls             → List local files
+cd /path/       → Change remote directory
+lcd /path/      → Change local directory
+get file.txt    → Download file
+put file.txt    → Upload file
+mget *          → Download multiple files
+mput *          → Upload multiple files
+exit            → Close SFTP session
+-----------------------------------------------------------
+
+===========================================================
+🧰  10. TEST & DEBUG SSH CONNECTIONS
+===========================================================
+
+# Test SSH without connecting
+ssh -v username@remote_host
+
+# Increase verbosity for deeper debugging
+ssh -vvv username@remote_host
+
+# Check if SSHD is listening
+sudo ss -tnlp | grep sshd
+
+# View SSH logs
+sudo journalctl -u sshd
+# OR
+sudo tail -f /var/log/secure
+
+===========================================================
+🔒  11. SECURE SSH SERVER (BEST PRACTICES)
+===========================================================
+
+# Disable root login
+sudo sed -i 's/^#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+
+# Change default port (example: 2222)
+sudo sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+
+# Restart SSH
+sudo systemctl restart sshd
+
+# Disable password login (key-only)
+sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart sshd
+
+# Install fail2ban for brute-force protection
+sudo dnf install fail2ban -y
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+===========================================================
+📋  12. OTHER USEFUL SSH COMMANDS
+===========================================================
+
+# Show all logged-in users
+who
+
+# Show SSHD service info
+sudo systemctl show sshd | grep ActiveState
+
+# Kill a specific SSH session
+sudo pkill -u username sshd
+
+# Verify open ports for SSH
+sudo netstat -tuln | grep 22
+
+# Copy SSH key manually on remote server
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+===========================================================
+🚀  13. REMOVE OR REINSTALL SSH
+===========================================================
+
+# Stop SSH service
+sudo systemctl stop sshd
+
+# Remove SSH packages
+sudo dnf remove openssh-server -y
+
+# Reinstall SSH server
+sudo dnf install openssh-server -y
+
+===========================================================
+✅  14. QUICK TEST
+===========================================================
+
+# Local SSH test (connect to self)
+ssh localhost
+
+# If it connects successfully, SSH server is running perfectly!
