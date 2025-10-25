@@ -1,0 +1,379 @@
+===========================================================
+⚙️  SERVICE MANAGEMENT – LEGENDARY DOCUMENT (RED HAT / CENTOS)
+===========================================================
+
+===========================================================
+🧠  1. UNDERSTANDING SERVICES IN RED HAT
+===========================================================
+
+Red Hat (v7 and above) uses **systemd** as its service manager.
+The main tools are:
+
+  👉 systemctl – manage and control services
+  👉 journalctl – view logs
+  👉 service – backward compatibility
+  👉 chkconfig – legacy tool for runlevels
+
+===========================================================
+📋  2. BASIC SERVICE OPERATIONS
+===========================================================
+
+# Start a service
+sudo systemctl start <service_name>
+
+# Stop a service
+sudo systemctl stop <service_name>
+
+# Restart a service
+sudo systemctl restart <service_name>
+
+# Reload a service (apply config changes)
+sudo systemctl reload <service_name>
+
+# Check current status
+sudo systemctl status <service_name>
+
+# Example:
+sudo systemctl status sshd
+
+===========================================================
+⚡  3. ENABLE / DISABLE AT BOOT
+===========================================================
+
+# Enable service on boot
+sudo systemctl enable <service_name>
+
+# Disable auto-start
+sudo systemctl disable <service_name>
+
+# Enable and start immediately
+sudo systemctl enable --now <service_name>
+
+# Disable and stop immediately
+sudo systemctl disable --now <service_name>
+
+# Verify
+systemctl is-enabled <service_name>
+
+# Example:
+systemctl is-enabled firewalld
+
+===========================================================
+🔁  4. SERVICE CONTROL SHORTCUTS
+===========================================================
+
+# List running services
+systemctl list-units --type=service --state=running
+
+# List all (active + inactive)
+systemctl list-units --type=service
+
+# List failed services
+systemctl --failed
+
+# Restart all failed units
+sudo systemctl restart $(systemctl --failed | awk '/service/{print $1}')
+
+# Reload daemon after edits
+sudo systemctl daemon-reload
+
+===========================================================
+🧩  5. SERVICE UNIT FILES
+===========================================================
+
+# System service files location
+/usr/lib/systemd/system/
+
+# Custom or override services
+/etc/systemd/system/
+
+# View a service file
+systemctl cat <service_name>.service
+
+# Edit a service safely (creates override.conf)
+sudo systemctl edit <service_name>
+
+# After editing:
+sudo systemctl daemon-reload
+sudo systemctl restart <service_name>
+
+===========================================================
+🔍  6. LOGS & DEBUGGING
+===========================================================
+
+# View logs for a specific service
+sudo journalctl -u <service_name>
+
+# Live logs
+sudo journalctl -u <service_name> -f
+
+# Logs from last boot
+sudo journalctl -u <service_name> -b
+
+# Filter only errors
+sudo journalctl -u <service_name> -p err
+
+# Last 50 lines
+sudo journalctl -u <service_name> -n 50
+
+# Example:
+sudo journalctl -u sshd -f
+
+===========================================================
+🧾  7. SERVICE INFORMATION
+===========================================================
+
+# Show all details
+systemctl show <service_name>
+
+# Show active state only
+systemctl show -p ActiveState <service_name>
+
+# List dependencies
+systemctl list-dependencies <service_name>
+
+# Example:
+systemctl list-dependencies sshd
+
+===========================================================
+💥  8. MULTIPLE SERVICE MANAGEMENT
+===========================================================
+
+# Stop multiple services
+sudo systemctl stop httpd firewalld postfix
+
+# Restart multiple services
+sudo systemctl restart network chronyd sshd
+
+# Check multiple statuses
+systemctl status httpd mariadb sshd
+
+===========================================================
+🧱  9. CREATE CUSTOM SERVICE
+===========================================================
+
+# Create new unit file
+sudo nano /etc/systemd/system/myapp.service
+
+# Example unit:
+-----------------------------------------------------------
+[Unit]
+Description=My Custom Flask App
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/ec2-user/app/app.py
+Restart=always
+User=ec2-user
+
+[Install]
+WantedBy=multi-user.target
+-----------------------------------------------------------
+
+# Apply and start
+sudo systemctl daemon-reload
+sudo systemctl start myapp
+sudo systemctl enable myapp
+sudo systemctl status myapp
+
+===========================================================
+⚙️  10. MASK / UNMASK SERVICE
+===========================================================
+
+# Prevent service from starting (even manually)
+sudo systemctl mask <service_name>
+
+# Undo mask
+sudo systemctl unmask <service_name>
+
+# Example:
+sudo systemctl mask firewalld
+sudo systemctl unmask firewalld
+
+===========================================================
+🧰  11. LEGACY “SERVICE” COMMANDS (SysV COMPATIBLE)
+===========================================================
+
+# Start a service
+sudo service <service_name> start
+
+# Stop service
+sudo service <service_name> stop
+
+# Restart service
+sudo service <service_name> restart
+
+# Check status
+sudo service <service_name> status
+
+# List all SysV services
+service --status-all
+
+# Example:
+sudo service sshd status
+
+===========================================================
+🧱  12. RUNLEVEL / CHKCONFIG COMMANDS (OLDER SYSTEMS)
+===========================================================
+
+# Show all services and boot status
+sudo chkconfig --list
+
+# Enable service at boot (legacy)
+sudo chkconfig <service_name> on
+
+# Disable service
+sudo chkconfig <service_name> off
+
+# Example:
+sudo chkconfig httpd on
+
+===========================================================
+🕓  13. JOURNALCTL – SYSTEMD LOG MANAGEMENT
+===========================================================
+
+# View all system logs
+sudo journalctl
+
+# Real-time log tail
+sudo journalctl -f
+
+# Logs since last boot
+sudo journalctl -b
+
+# Logs since yesterday
+sudo journalctl --since "yesterday"
+
+# Logs by severity (errors only)
+sudo journalctl -p 3 -xb
+
+# Logs for specific service and time
+sudo journalctl -u httpd --since "10:00" --until "18:00"
+
+===========================================================
+🔐  14. TROUBLESHOOTING SERVICES
+===========================================================
+
+# Check why a service failed
+sudo systemctl status <service_name>
+
+# Detailed error log
+sudo journalctl -xeu <service_name>
+
+# Reset failed status
+sudo systemctl reset-failed <service_name>
+
+# Reload systemd daemons
+sudo systemctl daemon-reload
+
+# Example:
+sudo systemctl status sshd
+sudo journalctl -xeu sshd
+
+===========================================================
+🚀  15. SYSTEM MANAGEMENT
+===========================================================
+
+# Reboot
+sudo systemctl reboot
+
+# Power off
+sudo systemctl poweroff
+
+# Suspend
+sudo systemctl suspend
+
+# List all units (active/inactive)
+systemctl list-units
+
+# Show failed ones
+systemctl --failed
+
+===========================================================
+🔥  16. COMMON SERVICE EXAMPLES
+===========================================================
+
+# SSH
+sudo systemctl status sshd
+
+# Apache (HTTPD)
+sudo systemctl status httpd
+
+# Nginx
+sudo systemctl status nginx
+
+# MariaDB / MySQL
+sudo systemctl status mariadb
+
+# Docker
+sudo systemctl status docker
+
+# Firewalld
+sudo systemctl status firewalld
+
+# Network
+sudo systemctl status network
+
+# Chrony (Time sync)
+sudo systemctl status chronyd
+
+===========================================================
+🧹  17. CLEANUP & REPAIR SERVICE STATES
+===========================================================
+
+# Reload all daemons
+sudo systemctl daemon-reload
+
+# Re-execute systemd
+sudo systemctl daemon-reexec
+
+# Reset failed state (all)
+sudo systemctl reset-failed
+
+# Reset single
+sudo systemctl reset-failed <service_name>
+
+===========================================================
+🏁  18. QUICK TESTS
+===========================================================
+
+# Example test with Apache (HTTPD)
+sudo systemctl start httpd
+sudo systemctl enable httpd
+sudo systemctl status httpd
+sudo journalctl -u httpd -f
+
+# Example test with SSHD
+sudo systemctl restart sshd
+sudo systemctl enable sshd
+sudo systemctl status sshd
+sudo journalctl -u sshd -b
+
+===========================================================
+💡  19. BONUS: NETWORK & FIREWALL SERVICE
+===========================================================
+
+# Restart network service
+sudo systemctl restart network
+
+# Restart NetworkManager
+sudo systemctl restart NetworkManager
+
+# Start firewalld
+sudo systemctl start firewalld
+
+# Enable at boot
+sudo systemctl enable firewalld
+
+# Check firewall rules
+sudo firewall-cmd --list-all
+
+===========================================================
+✅  20. SUMMARY
+===========================================================
+
+✔ Red Hat uses systemd → `systemctl` and `journalctl`
+✔ Older tools (service, chkconfig) still work for compatibility
+✔ Logs stored in journal instead of /var/log/messages
+✔ Custom services go in /etc/systemd/system/
+✔ Firewalld and NetworkManager are managed just like any other services
