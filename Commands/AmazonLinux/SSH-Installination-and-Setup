@@ -1,0 +1,255 @@
+===========================================================
+⚙️  SSH INSTALLATION & SETUP – LEGENDARY DOCUMENT (AMAZON LINUX)
+===========================================================
+
+===========================================================
+📦  1. INSTALL OPENSSH SERVER & CLIENT
+===========================================================
+
+# Update all packages
+sudo dnf update -y
+# (Older versions: use sudo yum update -y)
+
+# Install OpenSSH server
+sudo dnf install -y openssh-server
+# (For older systems: sudo yum install -y openssh-server)
+
+# Install SSH client (for outbound connections)
+sudo dnf install -y openssh-clients
+
+# Verify SSH installation
+ssh -V
+# Example output: OpenSSH_9.2p1, OpenSSL 3.0.8 7 Feb 2023
+
+===========================================================
+🧠  2. ENABLE & START SSH SERVICE
+===========================================================
+
+# Enable SSH to start on system boot
+sudo systemctl enable sshd
+
+# Start SSH service
+sudo systemctl start sshd
+
+# Check service status
+sudo systemctl status sshd
+
+# Restart SSH after any configuration change
+sudo systemctl restart sshd
+
+# Stop SSH service
+sudo systemctl stop sshd
+
+===========================================================
+🛠️  3. CONFIGURE SSH SETTINGS
+===========================================================
+
+# Main SSH configuration file:
+sudo nano /etc/ssh/sshd_config
+
+# Key settings to review/edit:
+-----------------------------------------------------------
+Port 22                     # Default SSH port
+PermitRootLogin no          # Disable direct root login
+PasswordAuthentication yes  # Enable password-based auth (set to no for key-only)
+PubkeyAuthentication yes    # Enable key-based login
+-----------------------------------------------------------
+
+# After saving changes (Ctrl + O, Enter, Ctrl + X), restart service:
+sudo systemctl restart sshd
+
+===========================================================
+🔍  4. CHECK FIREWALL SETTINGS (FIREWALLD)
+===========================================================
+
+# (Amazon Linux 2023 uses firewalld; older versions may not.)
+# Check firewall status
+sudo systemctl status firewalld
+
+# Start and enable if inactive
+sudo systemctl start firewalld
+sudo systemctl enable firewalld
+
+# Allow SSH (default port 22)
+sudo firewall-cmd --permanent --add-service=ssh
+
+# OR allow custom port (example: 2222)
+sudo firewall-cmd --permanent --add-port=2222/tcp
+
+# Reload firewall rules
+sudo firewall-cmd --reload
+
+# View active rules
+sudo firewall-cmd --list-all
+
+===========================================================
+🧱  5. CHECK SECURITY GROUPS (AWS EC2)
+===========================================================
+
+# NOTE: On AWS EC2, firewall access is controlled by Security Groups.
+# Ensure:
+#   - Inbound rule allows TCP port 22
+#   - Source: your public IP (for security)
+# Example:
+#   Type: SSH | Protocol: TCP | Port Range: 22 | Source: 0.0.0.0/0 (or your IP)
+
+===========================================================
+🔑  6. GENERATE SSH KEYS (CLIENT SIDE)
+===========================================================
+
+# On your local system (not on the EC2 instance):
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# Key file locations:
+# ~/.ssh/id_rsa        → Private key
+# ~/.ssh/id_rsa.pub    → Public key
+
+# Display public key
+cat ~/.ssh/id_rsa.pub
+
+===========================================================
+📤  7. COPY SSH KEY TO AMAZON LINUX SERVER
+===========================================================
+
+# Default AWS connection uses .pem key, e.g.:
+ssh -i murugan.pem ec2-user@<Public-IP>
+
+# To add your public key manually:
+cat ~/.ssh/id_rsa.pub | ssh -i murugan.pem ec2-user@<Public-IP> \
+"mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+# Alternatively, if password login is enabled:
+ssh-copy-id ec2-user@<Public-IP>
+
+===========================================================
+🔗  8. CONNECT TO AMAZON LINUX SERVER
+===========================================================
+
+# Basic SSH login using .pem key
+ssh -i murugan.pem ec2-user@<Public-IP>
+
+# Example:
+ssh -i murugan.pem ec2-user@54.242.88.13
+
+# Connect with custom port
+ssh -i murugan.pem -p 2222 ec2-user@<Public-IP>
+
+# Run remote command
+ssh -i murugan.pem ec2-user@<Public-IP> "hostname && uptime"
+
+===========================================================
+📂  9. TRANSFER FILES USING SCP
+===========================================================
+
+# Upload local → remote
+scp -i murugan.pem file.txt ec2-user@<Public-IP>:/home/ec2-user/
+
+# Download remote → local
+scp -i murugan.pem ec2-user@<Public-IP>:/home/ec2-user/file.txt /local/path/
+
+# Upload entire directory
+scp -i murugan.pem -r /local/dir ec2-user@<Public-IP>:/home/ec2-user/
+
+# Use non-standard port
+scp -i murugan.pem -P 2222 file.txt ec2-user@<Public-IP>:/path/
+
+===========================================================
+🧳  10. TRANSFER FILES USING SFTP
+===========================================================
+
+# Start SFTP session
+sftp -i murugan.pem ec2-user@<Public-IP>
+
+# Common commands inside SFTP:
+-----------------------------------------------------------
+ls              → List remote files
+lls             → List local files
+cd /path/       → Change remote directory
+lcd /path/      → Change local directory
+get file.txt    → Download file
+put file.txt    → Upload file
+mget *          → Download multiple files
+mput *          → Upload multiple files
+exit            → Close session
+-----------------------------------------------------------
+
+===========================================================
+🧰  11. TEST & DEBUG SSH CONNECTIONS
+===========================================================
+
+# Verbose connection (for troubleshooting)
+ssh -v -i murugan.pem ec2-user@<Public-IP>
+
+# Extra verbose output
+ssh -vvv -i murugan.pem ec2-user@<Public-IP>
+
+# Check SSH daemon listening port
+sudo ss -tnlp | grep sshd
+
+# View SSH logs
+sudo journalctl -u sshd
+# OR
+sudo tail -f /var/log/secure
+
+===========================================================
+🔒  12. SECURE SSH SERVER (BEST PRACTICES)
+===========================================================
+
+# Disable root login
+sudo sed -i 's/^#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+
+# Change default port (example: 2222)
+sudo sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+
+# Restart SSH service
+sudo systemctl restart sshd
+
+# Disable password login (use key-only)
+sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart sshd
+
+# Install fail2ban for brute-force protection
+sudo dnf install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+===========================================================
+📋  13. OTHER USEFUL SSH COMMANDS
+===========================================================
+
+# Show active SSH sessions
+who
+
+# Display SSHD service info
+sudo systemctl show sshd | grep ActiveState
+
+# Kill a user SSH session
+sudo pkill -u ec2-user sshd
+
+# Verify open ports
+sudo netstat -tuln | grep 22
+
+# Manually copy public key on server
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+===========================================================
+🚀  14. REMOVE OR REINSTALL SSH
+===========================================================
+
+# Stop SSH service
+sudo systemctl stop sshd
+
+# Remove SSH packages
+sudo dnf remove openssh-server -y
+
+# Reinstall SSH
+sudo dnf install openssh-server -y
+
+===========================================================
+✅  15. QUICK TEST
+===========================================================
+
+# Local SSH test (loopback)
+ssh localhost
+
+# Expected result: successful connection → proves SSH is active.
